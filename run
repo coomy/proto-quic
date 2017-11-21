@@ -1,0 +1,54 @@
+#!/bin/bash
+
+QUIC_ROOT_PATH=`pwd`/src
+
+EXE_SERVER=$QUIC_ROOT_PATH/out/Default/quic_server
+EXE_CLIENT=$QUIC_ROOT_PATH/out/Default/quic_client
+
+if [ $# -eq 1 -a $1=='-h' ];then
+  echo " -s [ run server ] "
+  echo " -c [ run client ] "
+  echo " -g [ start gdb for -s or -c ] "
+  exit
+fi
+
+is_gdb=false
+is_server=false 
+if [ $# -gt 2 -o $# -le 0 ];then
+  echo "args error"
+  exit
+fi
+
+if [ $# -eq 2 ];then
+  if [ $1=='-gdb' -o $2=='-gdb' ];then
+    is_gdb=true
+  fi
+fi
+
+if [ $1 == '-s' ];then
+  is_server=true
+fi
+
+_exe=$EXE_CLIENT
+
+if [ "$is_server" == true ];then
+  _exe=$EXE_SERVER
+fi
+
+if [ "$is_gdb" == true ];then
+  if [ "$is_server" == true ];then
+    echo "gdb args: set args --quic_response_cache_dir=./web_site/www.example.org --certificate_file=src/net/tools/quic/certs/out/leaf_cert.pem --key_file=src/net/tools/quic/certs/out/leaf_cert.pkcs8 --port=80"
+  else
+    echo "gdb args: set args --host=127.0.0.1 --port=80 https://www.example.org/"
+    #echo "gdb args: set args --host=127.0.0.1 --port=80 --disable-certificate-verification https://www.example.org/"
+  fi
+  gdb $_exe
+elif [ "$is_server" == true ];then
+  $_exe --v=1 --quic_response_cache_dir=./web_site/www.example.org --certificate_file=src/net/tools/quic/certs/out/leaf_cert.pem --key_file=src/net/tools/quic/certs/out/leaf_cert.pkcs8 --port=80
+else
+  #$_exe --v=1 --host=127.0.0.1 --port=80 --disable-certificate-verification https://www.example.org/
+  $_exe --v=1 --host=127.0.0.1 --port=80 https://www.example.org/
+fi
+
+exit
+  
